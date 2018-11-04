@@ -49,9 +49,6 @@ ws.onmessage = function(message) {
 	case 'stopCommunication':
 		dispose();
 		break;
-	case 'takeover':
-	    stop();
-	    break;
 	default:
 		console.error('Unrecognized message', parsedMessage);
 	}
@@ -161,6 +158,13 @@ function stop() {
 	}
 	sendMessage(message);
 	dispose();
+}
+
+function takeover() {
+    var message = {
+        id : 'stop'
+    }
+    sendMessage(message);
 }
 
 function dispose() {
