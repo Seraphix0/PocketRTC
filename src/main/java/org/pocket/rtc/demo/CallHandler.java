@@ -15,7 +15,7 @@
  *
  */
 
-package org.kurento.tutorial.one2manycall;
+package org.pocket.rtc.demo;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -78,7 +78,7 @@ public class CallHandler extends TextWebSocketHandler {
           handleErrorResponse(t, session, "viewerResponse");
         }
         break;
-      case "onIceCandidate": {
+        case "onIceCandidate": {
         JsonObject candidate = jsonMessage.get("candidate").getAsJsonObject();
 
         UserSession user = null;
@@ -97,6 +97,9 @@ public class CallHandler extends TextWebSocketHandler {
         }
         break;
       }
+        case "takeover":
+            takeover(session);
+            break;
       case "stop":
         stop(session);
         break;
@@ -247,9 +250,34 @@ public class CallHandler extends TextWebSocketHandler {
     }
   }
 
-  // private synchronized void takeover(WebSocketSession session) throws IOException {
+  private synchronized void takeover(WebSocketSession initiator) throws IOException {
+        WebSocketSession presenter = presenterUserSession.getSession();
 
-  // }
+        JsonObject presenterResponse = new JsonObject();
+        presenterResponse.addProperty("id", "takeoverResponse");
+        presenterResponse.addProperty("response", "stop");
+        presenter.sendMessage(new TextMessage(presenterResponse.toString()));
+
+        JsonObject initiatorResponse = new JsonObject();
+        initiatorResponse.addProperty("id", "takeoverResponse");
+        initiatorResponse.addProperty("response", "accepted");
+        // initiatorResponse.addProperty("initiator", "true");
+        initiator.sendMessage(new TextMessage(initiatorResponse.toString()));
+
+        for (UserSession viewer : viewers.values()) {
+            JsonObject response = new JsonObject();
+            response.addProperty("id", "takeoverResponse");
+            response.addProperty("response", "rejoin");
+            viewer.sendMessage(response);
+        }
+
+        /*
+        JsonObject presenterRejoinResponse = new JsonObject();
+        presenterRejoinResponse.addProperty("id", "takeoverResponse");
+        presenterRejoinResponse.addProperty("response", "rejoin");
+        presenter.sendMessage(new TextMessage(presenterRejoinResponse.toString()));
+        */
+  }
 
   @Override
   public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {

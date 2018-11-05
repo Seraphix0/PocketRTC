@@ -18,6 +18,7 @@
 var ws = new WebSocket('wss://' + location.host + '/call');
 var video;
 var webRtcPeer;
+var PeerState; // 0 = Undefined; 1 = Active viewer; 2 = Takeover Initiator
 
 window.onload = function() {
 	console = new Console();
@@ -40,6 +41,9 @@ ws.onmessage = function(message) {
 	case 'viewerResponse':
 		viewerResponse(parsedMessage);
 		break;
+	case 'takeoverResponse':
+	    takeoverResponse(parsedMessage);
+	    break;
 	case 'iceCandidate':
 		webRtcPeer.addIceCandidate(parsedMessage.candidate, function(error) {
 			if (error)
@@ -47,11 +51,15 @@ ws.onmessage = function(message) {
 		});
 		break;
 	case 'stopCommunication':
-		dispose();
+	    if (PeerState == 2) {
+            console.info('Ignoring stopCommunication request, because user is takeover initiator.');
+            presenter();
+            PeerState = 0;
+        }
+        else {
+            dispose();
+        }
 		break;
-	case 'takeover':
-	    stop();
-	    break;
 	default:
 		console.error('Unrecognized message', parsedMessage);
 	}
@@ -100,6 +108,7 @@ function presenter() {
 				});
 
 		enableStopButton();
+        disableTakeoverButton();
 	}
 }
 
@@ -131,6 +140,7 @@ function viewer() {
 				});
 
 		enableStopButton();
+        enableTakeoverButton();
 	}
 }
 
@@ -163,6 +173,32 @@ function stop() {
 	dispose();
 }
 
+function takeover() {
+    var message = {
+        id : 'takeover'
+    }
+    sendMessage(message);
+}
+
+function takeoverResponse(message) {
+	if (message.response != 'stop' && message.response != 'accepted') {
+		var errorMsg = message.message ? message.message : 'Unknown error';
+		console.info('Takeover not accepted for the following reason: ' + errorMsg);
+	} else if (message.response == 'stop') {
+        stop();
+        console.info('Stopping broadcast in compliance with takeover request.');
+        window.setTimeout(viewer(),1000);
+    } else if (message.response == 'rejoin') {
+	    window.setTimeout(viewer(),1000);
+        console.info('Rejoining session by overtaker.');
+    }
+    else if (message.response == 'accepted') {
+        PeerState = 2;
+        stop();
+        console.info('Takeover request accepted.');
+	}
+}
+
 function dispose() {
 	if (webRtcPeer) {
 		webRtcPeer.dispose();
@@ -171,18 +207,28 @@ function dispose() {
 	hideSpinner(video);
 
 	disableStopButton();
+	disableTakeoverButton();
 }
 
 function disableStopButton() {
 	enableButton('#presenter', 'presenter()');
 	enableButton('#viewer', 'viewer()');
 	disableButton('#stop');
+    disableButton('#takeover');
 }
 
 function enableStopButton() {
 	disableButton('#presenter');
 	disableButton('#viewer');
 	enableButton('#stop', 'stop()');
+}
+
+function disableTakeoverButton() {
+    disableButton('#takeover');
+}
+
+function enableTakeoverButton() {
+    enableButton('#takeover', 'takeover()');
 }
 
 function disableButton(id) {
@@ -197,7 +243,7 @@ function enableButton(id, functionName) {
 
 function sendMessage(message) {
 	var jsonMessage = JSON.stringify(message);
-	console.log('Senging message: ' + jsonMessage);
+	console.log('Sending message: ' + jsonMessage);
 	ws.send(jsonMessage);
 }
 
