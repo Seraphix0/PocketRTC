@@ -52,12 +52,8 @@ ws.onmessage = function(message) {
 		break;
 	case 'stopCommunication':
 	    if (PeerState == 2) {
-	        console.info('Ignoring stopCommunication request, because user is takeover initiator.');
+            console.info('Ignoring stopCommunication request, because user is takeover initiator.');
             presenter();
-            PeerState = 0;
-        } else if (PeerState == 1) {
-            console.info('Ignoring stopCommunication request, because user is rejoining new session.');
-            viewer();
             PeerState = 0;
         }
         else {
@@ -112,7 +108,7 @@ function presenter() {
 				});
 
 		enableStopButton();
-        // disableTakeoverButton();
+        disableTakeoverButton();
 	}
 }
 
@@ -190,10 +186,10 @@ function takeoverResponse(message) {
 		console.info('Takeover not accepted for the following reason: ' + errorMsg);
 	} else if (message.response == 'stop') {
         stop();
-        PeerState = 1;
         console.info('Stopping broadcast in compliance with takeover request.');
+        window.setTimeout(viewer(),1000);
     } else if (message.response == 'rejoin') {
-	    PeerState = 1;
+	    window.setTimeout(viewer(),1000);
         console.info('Rejoining session by overtaker.');
     }
     else if (message.response == 'accepted') {

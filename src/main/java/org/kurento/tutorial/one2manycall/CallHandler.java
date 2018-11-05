@@ -267,9 +267,16 @@ public class CallHandler extends TextWebSocketHandler {
         for (UserSession viewer : viewers.values()) {
             JsonObject response = new JsonObject();
             response.addProperty("id", "takeoverResponse");
-            initiatorResponse.addProperty("response", "rejoin");
+            response.addProperty("response", "rejoin");
             viewer.sendMessage(response);
         }
+
+        /*
+        JsonObject presenterRejoinResponse = new JsonObject();
+        presenterRejoinResponse.addProperty("id", "takeoverResponse");
+        presenterRejoinResponse.addProperty("response", "rejoin");
+        presenter.sendMessage(new TextMessage(presenterRejoinResponse.toString()));
+        */
   }
 
   @Override
