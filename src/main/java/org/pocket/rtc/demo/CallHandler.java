@@ -15,7 +15,7 @@
  *
  */
 
-package org.kurento.tutorial.one2manycall;
+package org.pocket.rtc.demo;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
